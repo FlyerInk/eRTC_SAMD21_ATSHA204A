@@ -28,6 +28,7 @@
 #include "definitions.h"                // SYS function prototypes
 
 #include "cryptoauthlib.h"
+#include "host/atca_host.h"
 
 extern ATCAIfaceCfg atsha204a_0_init_data;
 
@@ -39,7 +40,6 @@ const uint8_t nonce_in[20] = {
 
 // 用户的SecureKey, 和写入到SHA204A芯片中的密码一致。
 // 基于安全考虑，实际使用时需要对这个Key做一些处理，比如打散或用异或转化，使用时再组合恢复
-// ST-ESCS-XX1A21-B19
 const uint8_t key0[32] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -47,7 +47,7 @@ const uint8_t key0[32] = {
 
 // 软件计算SHA256值时需要附加的参数
 uint8_t mac_bytes[24] = {
-    0x08, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xEE,
     0x00, 0x00, 0x00, 0x00, 0x01, 0x23, 0x00, 0x00,
 };
@@ -64,7 +64,6 @@ int main ( void )
     uint8_t sn[9];
     uint8_t challenge[32];
     uint8_t digest[32];
-    uint8_t Tempkey[32];
     uint8_t sha2_input[88];
     uint8_t mac_sw[32];
 
@@ -90,37 +89,25 @@ int main ( void )
     }
 
     // 获取随机数
-    status = atcab_nonce_base (0x01, 0x00, nonce_in, challenge);
+    status = atcab_nonce_rand (nonce_in, challenge);
     if (status != ATCA_SUCCESS) {
         printf ("Nonce Fail\n");
         return ATCA_FUNC_FAIL;
     }
+    challenge[0] ^= 0x21;
     atcab_printbin_label ("Challenge:\r\n", challenge, 32);
 
     // 获取器件的MAC值，使用Slot0的Key
-    status = atcab_mac (0x01, 0, NULL, digest);
+    status = atcab_mac (0x00, 0, challenge, digest);
     if (status != ATCA_SUCCESS) {
         printf ("Slot 0 GetMac Fail\n");
         return ATCA_FUNC_FAIL;
     }
     atcab_printbin_label ("Digest:\r\n", digest, 32);
 
-    // 使用SHA256算法计算TempKey中的数据
-    memcpy (sha2_input, challenge, 32);
-    memcpy (sha2_input + 32, nonce_in, 20);
-    sha2_input[52] = 0x16;
-    sha2_input[53] = 0x01;
-    sha2_input[54] = 0x00;
-    status = atcac_sw_sha2_256 (sha2_input, 55, Tempkey);
-    if (status != ATCA_SUCCESS) {
-        printf ("Get SW TempKey Fail\n");
-        return ATCA_FUNC_FAIL;
-    }
-    atcab_printbin_label ("TempKey:\r\n", Tempkey, 32);
-
     // 使用软件SHA256算法计算MAC值
     memcpy (sha2_input, key0, 32);
-    memcpy (sha2_input + 32, Tempkey, 32);
+    memcpy (sha2_input + 32, challenge, 32);
     memcpy (sha2_input + 64, mac_bytes, 24);
     status = atcac_sw_sha2_256 (sha2_input, 88, mac_sw);
     if (status != ATCA_SUCCESS) {
