@@ -567,6 +567,8 @@
         <property key="memories.programmemory.ranges" value="0-3ffff"/>
         <property key="memories.rww" value="true"/>
         <property key="poweroptions.powerenable" value="false"/>
+        <property key="programmerToGoFilePath"
+                  value="E:/Microchip/Security/eRTC2021/SAMD21_ATSHA204A/firmware/SAMD21_ATSHA204A.X/debug/default/SAMD21_ATSHA204A_ptg"/>
         <property key="programoptions.eraseb4program" value="true"/>
         <property key="programoptions.preservedataflash" value="false"/>
         <property key="programoptions.preservedataflash.ranges"

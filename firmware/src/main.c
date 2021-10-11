@@ -28,7 +28,6 @@
 #include "definitions.h"                // SYS function prototypes
 
 #include "cryptoauthlib.h"
-#include "host/atca_host.h"
 
 extern ATCAIfaceCfg atsha204a_0_init_data;
 
